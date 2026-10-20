@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+
 from conftest import order
 
 MOCK_AUTH = {"Authorization": "Bearer dev-token"}
@@ -143,3 +145,60 @@ def test_status_change_posts_order_that_waited_for_stock(api, mock, uid, receive
     assert r.status_code == 200, r.text
     assert r.json()["posted"] is True
     assert stock(sku) == 0
+
+
+def test_status_is_resent_after_marketplace_outage(api, mock, uid, receive, pull):
+    sku, order_id = f"T-{uid}", f"MP-{uid}"
+    receive(sku, 5, name="Товар")
+    mock.post("/_test/orders", json=[order(order_id, (sku, 1, 10))])
+    pull()
+
+    mock.post("/_test/fail", params={"status_updates": True})
+    r = api.put(f"/orders/{order_id}/status", json={"status": "delivering"})
+    assert r.status_code == 200
+    assert r.json()["status"] == "delivering"
+    assert len(r.json()["marketplace_errors"]) == 1
+    assert mock.get(f"/_test/orders/{order_id}").json()["status"] == "awaiting_packaging"
+
+    # пока маркетплейс недоступен, статус остается в очереди
+    r = api.post("/exchange/push-statuses")
+    assert any(order_id in e for e in r.json()["errors"])
+
+    mock.post("/_test/fail", params={"status_updates": False})
+    r = api.post("/exchange/push-statuses")
+    assert r.json()["errors"] == []
+    assert r.json()["processed"] >= 1
+    assert mock.get(f"/_test/orders/{order_id}").json()["status"] == "delivering"
+
+
+def test_parallel_orders_do_not_oversell(api, mock, uid, receive, stock, pull):
+    sku = f"T-{uid}"
+    ids = [f"A-{uid}", f"B-{uid}"]
+    receive(sku, 1, name="Товар")
+    mock.post("/_test/orders", json=[order(i, (sku, 3, 10)) for i in ids])
+    pull()
+    receive(sku, 4)  # остаток 5: хватает только на один заказ
+
+    def deliver(order_id):
+        return api.put(f"/orders/{order_id}/status", json={"status": "delivering"}).status_code
+
+    with ThreadPoolExecutor(2) as pool:
+        codes = sorted(pool.map(deliver, ids))
+
+    assert codes == [200, 422]
+    assert stock(sku) == 2
+
+
+def test_parallel_pulls_create_one_order(api, mock, uid, receive, stock):
+    sku, order_id = f"T-{uid}", f"MP-{uid}"
+    receive(sku, 10, name="Товар")
+    mock.post("/_test/orders", json=[order(order_id, (sku, 1, 10))])
+
+    with ThreadPoolExecutor(5) as pool:
+        results = list(pool.map(lambda _: api.post("/exchange/pull-orders").json(), range(5)))
+
+    assert sum(r["created"] for r in results) == 1
+    assert all(r["errors"] == [] for r in results)
+    ids = [o["id"] for o in api.get("/orders", params={"limit": 1000}).json()["orders"]]
+    assert ids.count(order_id) == 1
+    assert stock(sku) == 9

@@ -280,6 +280,7 @@
 			<Enum>СтатусыЗаказов</Enum>
 			<Enum>НаправленияОбмена</Enum>
 			<InformationRegister>ЖурналОбмена</InformationRegister>
+			<InformationRegister>ОчередьОтправкиСтатусов</InformationRegister>
 			<AccumulationRegister>ОстаткиТоваров</AccumulationRegister>
 		</ChildObjects>
 	</Configuration>

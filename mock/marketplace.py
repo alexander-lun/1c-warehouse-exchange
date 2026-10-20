@@ -20,6 +20,7 @@ app = FastAPI(title="Marketplace mock")
 offers: set[str] = set()
 stocks: dict[str, int] = {}
 orders: dict[str, dict] = {}
+failures = {"status_updates": False}
 
 
 def now():
@@ -65,6 +66,8 @@ def list_orders(since: str | None = None, status: str | None = None):
 
 @app.patch("/v1/orders/{order_id}/status", dependencies=[Depends(auth)])
 def set_status(order_id: str, body: StatusUpdate):
+    if failures["status_updates"]:
+        raise HTTPException(503, "service unavailable")
     if order_id not in orders:
         raise HTTPException(404, "order not found")
     if body.status not in STATUSES:
@@ -114,8 +117,16 @@ def get_order(order_id: str):
     return orders[order_id]
 
 
+@app.post("/_test/fail")
+def set_failures(status_updates: bool = False):
+    """Имитация сбоя: смена статуса отвечает 503."""
+    failures["status_updates"] = status_updates
+    return failures
+
+
 @app.post("/_test/reset")
 def reset():
+    failures["status_updates"] = False
     offers.clear()
     stocks.clear()
     orders.clear()

@@ -130,7 +130,8 @@ paths:
       description: |
         Перепроводит заказ и передает новый статус на маркетплейс.
         Отмененный заказ снимает резерв. Из статусов delivered и cancelled заказ не переводится.
-        Ошибки передачи на маркетплейс не откатывают смену статуса — они возвращаются в `marketplace_errors`.
+        Ошибки передачи на маркетплейс не откатывают смену статуса — они возвращаются в `marketplace_errors`,
+        а статус ставится в очередь повторной отправки.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string } }
       requestBody:
@@ -167,13 +168,14 @@ paths:
     post:
       summary: Ручной запуск обмена с маркетплейсом
       description: |
-        `pull-orders` — загрузка новых и измененных заказов, `push-stock` — выгрузка остатков.
+        `pull-orders` — загрузка новых и измененных заказов, `push-stock` — выгрузка остатков,
+        `push-statuses` — повторная отправка статусов, которые не удалось передать раньше.
         То же самое по расписанию делает регламентное задание «Загрузка заказов маркетплейса».
       parameters:
         - name: operation
           in: path
           required: true
-          schema: { type: string, enum: [pull-orders, push-stock] }
+          schema: { type: string, enum: [pull-orders, push-stock, push-statuses] }
       responses:
         "200":
           description: Результат обмена (ошибки по отдельным заказам не прерывают обмен)

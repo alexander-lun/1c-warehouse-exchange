@@ -21,6 +21,7 @@
 				<xr:Item xsi:type="xr:MDObjectRef">Document.ЗаказМаркетплейса</xr:Item>
 				<xr:Item xsi:type="xr:MDObjectRef">AccumulationRegister.ОстаткиТоваров</xr:Item>
 				<xr:Item xsi:type="xr:MDObjectRef">InformationRegister.ЖурналОбмена</xr:Item>
+				<xr:Item xsi:type="xr:MDObjectRef">InformationRegister.ОчередьОтправкиСтатусов</xr:Item>
 				<xr:Item xsi:type="xr:MDObjectRef">Constant.АдресСервисаМаркетплейса</xr:Item>
 				<xr:Item xsi:type="xr:MDObjectRef">Constant.ТокенМаркетплейса</xr:Item>
 				<xr:Item xsi:type="xr:MDObjectRef">Constant.ТокенAPI</xr:Item>
