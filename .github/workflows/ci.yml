@@ -26,6 +26,7 @@ jobs:
 
       - name: Анализ
         run: |
+          mkdir -p bsl-report
           java -jar bsl-ls.jar --analyze --srcDir src \
             --configuration .bsl-language-server.json --reporter json -o bsl-report
           python3 scripts/bsl-check.py bsl-report
