@@ -1,0 +1,15 @@
+{
+  "$schema": "https://1c-syntax.github.io/bsl-language-server/configuration/schema.json",
+  "language": "ru",
+  "diagnostics": {
+    "parameters": {
+      "MagicNumber": {
+        "authorizedNumbers": "-1,0,1,2,3,19,30,60,200,201,300,400,401,404,409,422,500,1000"
+      },
+      "Typo": {
+        "userWordsToIgnore": "маркетплейс,маркетплейса,маркетплейсом,маркетплейсу,Маркетплейс,Маркетплейса,Маркетплейсом,сериализации,Сериализации,сериализует"
+      },
+      "NestedFunctionInParameters": false
+    }
+  }
+}

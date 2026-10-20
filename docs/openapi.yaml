@@ -1,0 +1,256 @@
+openapi: 3.0.3
+info:
+  title: API склада
+  version: 1.0.0
+  description: |
+    HTTP-сервис APIСклада конфигурации «Склад: обмен с маркетплейсом».
+    Базовый адрес: `http://<сервер>/<публикация>/hs/api`.
+
+    Все методы требуют заголовок `X-Api-Key` со значением константы «Токен доступа к API склада».
+    Заголовок `Authorization` не используется: его забирает веб-модуль 1С для аутентификации пользователей базы.
+
+    Ошибки возвращаются в виде `{"error": "текст"}`.
+servers:
+  - url: http://127.0.0.1:8081/warehouse/hs/api
+security:
+  - ApiKey: []
+
+paths:
+  /stock:
+    get:
+      summary: Остатки всех товаров
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/StockItem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /stock/{sku}:
+    get:
+      summary: Остаток товара по артикулу
+      parameters:
+        - { name: sku, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StockItem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /receipts:
+    post:
+      summary: Поступление товаров
+      description: |
+        Создает и проводит документ «Поступление товаров».
+        Товар ищется по артикулу; если его нет, он создается — тогда обязательно `name`.
+        Поступление создается целиком или не создается вовсе.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [sku, quantity]
+                    properties:
+                      sku: { type: string }
+                      name: { type: string, description: "Обязательно для нового товара" }
+                      quantity: { type: number, minimum: 0, exclusiveMinimum: true }
+            example:
+              items:
+                - { sku: ART-001, name: "Кабель ВВГнг 3х2,5", quantity: 100 }
+      responses:
+        "201":
+          description: Поступление создано
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  number: { type: string }
+                  date: { type: string, format: date-time }
+                  items: { type: integer, description: Количество строк }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Error" }
+
+  /orders:
+    get:
+      summary: Заказы маркетплейса
+      description: Последние заказы по убыванию даты.
+      parameters:
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/Status" } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 1000, default: 100 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    type: array
+                    items: { $ref: "#/components/schemas/OrderHeader" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /orders/{id}:
+    get:
+      summary: Заказ по идентификатору маркетплейса
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /orders/{id}/status:
+    put:
+      summary: Смена статуса заказа
+      description: |
+        Перепроводит заказ и передает новый статус на маркетплейс.
+        Отмененный заказ снимает резерв. Из статусов delivered и cancelled заказ не переводится.
+        Ошибки передачи на маркетплейс не откатывают смену статуса — они возвращаются в `marketplace_errors`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { $ref: "#/components/schemas/Status" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Order"
+                  - type: object
+                    properties:
+                      marketplace_errors: { type: array, items: { type: string } }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "422":
+          description: Заказ не удалось провести (например, не хватает товара)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /exchange/{operation}:
+    post:
+      summary: Ручной запуск обмена с маркетплейсом
+      description: |
+        `pull-orders` — загрузка новых и измененных заказов, `push-stock` — выгрузка остатков.
+        То же самое по расписанию делает регламентное задание «Загрузка заказов маркетплейса».
+      parameters:
+        - name: operation
+          in: path
+          required: true
+          schema: { type: string, enum: [pull-orders, push-stock] }
+      responses:
+        "200":
+          description: Результат обмена (ошибки по отдельным заказам не прерывают обмен)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExchangeResult" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/Error" }
+
+components:
+  securitySchemes:
+    ApiKey:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+
+  responses:
+    Unauthorized:
+      description: Нет или неверный ключ API
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Error:
+      description: Ошибка
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+
+    Status:
+      type: string
+      enum: [new, awaiting_packaging, delivering, delivered, cancelled]
+
+    StockItem:
+      type: object
+      properties:
+        sku: { type: string }
+        name: { type: string }
+        quantity: { type: number }
+
+    OrderHeader:
+      type: object
+      properties:
+        id: { type: string, description: Идентификатор заказа на маркетплейсе }
+        number: { type: string, description: Номер документа в 1С }
+        date: { type: string, format: date-time }
+        status: { $ref: "#/components/schemas/Status" }
+        amount: { type: number }
+        posted: { type: boolean, description: "false — заказ сохранен, но не проведен (не хватило товара)" }
+
+    Order:
+      allOf:
+        - $ref: "#/components/schemas/OrderHeader"
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                type: object
+                properties:
+                  sku: { type: string }
+                  name: { type: string }
+                  quantity: { type: number }
+                  price: { type: number }
+                  amount: { type: number }
+
+    ExchangeResult:
+      type: object
+      properties:
+        success: { type: boolean }
+        processed: { type: integer }
+        created: { type: integer }
+        updated: { type: integer }
+        skipped: { type: integer }
+        errors: { type: array, items: { type: string } }
