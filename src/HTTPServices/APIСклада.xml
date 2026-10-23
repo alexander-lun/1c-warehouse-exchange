@@ -148,6 +148,101 @@
 					</Method>
 				</ChildObjects>
 			</URLTemplate>
+			<URLTemplate uuid="31fe8d72-f848-42de-9d60-2f5f3d819040">
+				<Properties>
+					<Name>Ячейки</Name>
+					<Synonym/>
+					<Comment/>
+					<Template>/cells</Template>
+				</Properties>
+				<ChildObjects>
+					<Method uuid="d845eda2-df89-44f9-9dbf-f4e011c8c96d">
+						<Properties>
+							<Name>POST</Name>
+							<Synonym/>
+							<Comment/>
+							<HTTPMethod>POST</HTTPMethod>
+							<Handler>ЯчейкиPOST</Handler>
+						</Properties>
+					</Method>
+				</ChildObjects>
+			</URLTemplate>
+			<URLTemplate uuid="1e7f6d53-837e-47ed-88ad-4354a878622e">
+				<Properties>
+					<Name>Размещения</Name>
+					<Synonym/>
+					<Comment/>
+					<Template>/placements</Template>
+				</Properties>
+				<ChildObjects>
+					<Method uuid="4e534ce9-26a7-453e-9b06-fe7a6a2b6ad2">
+						<Properties>
+							<Name>POST</Name>
+							<Synonym/>
+							<Comment/>
+							<HTTPMethod>POST</HTTPMethod>
+							<Handler>РазмещенияPOST</Handler>
+						</Properties>
+					</Method>
+				</ChildObjects>
+			</URLTemplate>
+			<URLTemplate uuid="c9c69420-e68a-411f-bee8-bd9431a0699d">
+				<Properties>
+					<Name>ОтборЗаказа</Name>
+					<Synonym/>
+					<Comment/>
+					<Template>/orders/{id}/pick</Template>
+				</Properties>
+				<ChildObjects>
+					<Method uuid="c517043f-9045-4398-a519-e8690c3c8876">
+						<Properties>
+							<Name>POST</Name>
+							<Synonym/>
+							<Comment/>
+							<HTTPMethod>POST</HTTPMethod>
+							<Handler>ОтборЗаказаPOST</Handler>
+						</Properties>
+					</Method>
+				</ChildObjects>
+			</URLTemplate>
+			<URLTemplate uuid="067850b9-3df7-4cd9-bbca-baf58cb5e354">
+				<Properties>
+					<Name>ЛистОтбора</Name>
+					<Synonym/>
+					<Comment/>
+					<Template>/orders/{id}/pick-list</Template>
+				</Properties>
+				<ChildObjects>
+					<Method uuid="c8e6566b-03e8-4a68-9473-30dad9f92969">
+						<Properties>
+							<Name>GET</Name>
+							<Synonym/>
+							<Comment/>
+							<HTTPMethod>GET</HTTPMethod>
+							<Handler>ЛистОтбораGET</Handler>
+						</Properties>
+					</Method>
+				</ChildObjects>
+			</URLTemplate>
+			<URLTemplate uuid="be217cb7-9f3d-4bc2-b9d8-c9c576589b1d">
+				<Properties>
+					<Name>Оборачиваемость</Name>
+					<Synonym/>
+					<Comment/>
+					<Template>/reports/turnover</Template>
+				</Properties>
+				<ChildObjects>
+					<Method uuid="831dac8b-bd2b-4359-91c4-102bb0f69910">
+						<Properties>
+							<Name>GET</Name>
+							<Synonym/>
+							<Comment/>
+							<HTTPMethod>GET</HTTPMethod>
+							<Handler>ОборачиваемостьGET</Handler>
+						</Properties>
+					</Method>
+				</ChildObjects>
+			</URLTemplate>
 		</ChildObjects>
 	</HTTPService>
 </MetaDataObject>

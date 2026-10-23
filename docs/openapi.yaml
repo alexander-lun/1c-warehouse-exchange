@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: API склада
-  version: 1.0.0
+  version: 1.1.0
   description: |
     HTTP-сервис APIСклада конфигурации «Склад: обмен с маркетплейсом».
     Базовый адрес: `http://<сервер>/<публикация>/hs/api`.
@@ -34,7 +34,8 @@ paths:
 
   /stock/{sku}:
     get:
-      summary: Остаток товара по артикулу
+      summary: Остаток товара по артикулу с разбивкой по ячейкам
+      description: Для ТСД - где лежит товар. `ПРИЕМКА` - зона приемки (товар еще не размещен).
       parameters:
         - { name: sku, in: path, required: true, schema: { type: string } }
       responses:
@@ -42,7 +43,14 @@ paths:
           description: OK
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/StockItem" }
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StockItem"
+                  - type: object
+                    properties:
+                      cells:
+                        type: array
+                        items: { $ref: "#/components/schemas/CellQuantity" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/Error" }
 
@@ -185,6 +193,154 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/Error" }
 
+  /cells:
+    post:
+      summary: Загрузка ячеек склада
+      description: Создает ячейки или обновляет порядок обхода существующих (ячейка ищется по адресу).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cells]
+              properties:
+                cells:
+                  type: array
+                  items:
+                    type: object
+                    required: [address]
+                    properties:
+                      address: { type: string, example: A-01-02 }
+                      route_order: { type: integer, description: Порядок обхода ячеек при сборке }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  created: { type: integer }
+                  updated: { type: integer }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /placements:
+    post:
+      summary: Размещение товара по ячейкам
+      description: |
+        Создает и проводит документ «Размещение товаров».
+        С телом `items` - перемещает указанное количество между ячейками.
+        Без тела - размещает все из зоны приемки: товар кладется в ячейку, где он уже хранится,
+        новый товар - в первую свободную ячейку по порядку обхода.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: "#/components/schemas/Placement" }
+      responses:
+        "201":
+          description: Документ проведен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  number: { type: string }
+                  items: { type: array, items: { $ref: "#/components/schemas/Placement" } }
+                  errors: { type: array, items: { type: string }, description: "Товары, для которых не нашлось ячейки" }
+        "200": { description: В зоне приемки нет товара }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422":
+          description: В ячейке-отправителе не хватает товара
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /orders/{id}/pick:
+    post:
+      summary: Отбор товаров по заказу
+      description: |
+        Создает и проводит документ «Отбор товаров»: товар списывается из ячеек хранения в порядке обхода.
+        Заказ должен быть проведен и находиться в статусе `awaiting_packaging`. Заказ отбирается один раз.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "201":
+          description: Отбор проведен
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PickList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { description: Заказ уже отобран }
+        "422":
+          description: Не хватает товара в ячейках хранения или заказ в неподходящем статусе
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /orders/{id}/pick-list:
+    get:
+      summary: Лист отбора по заказу
+      description: Печатная форма «Лист отбора» в PDF; с `format=json` - те же строки в JSON.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: format, in: query, schema: { type: string, enum: [pdf, json], default: pdf } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+            application/json:
+              schema: { $ref: "#/components/schemas/PickList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /reports/turnover:
+    get:
+      summary: Оборачиваемость товаров за период
+      description: |
+        Те же показатели, что в отчете «Оборачиваемость товаров» (одна схема компоновки данных).
+        Средний остаток - среднее остатков на начало и конец периода.
+        Оборачиваемость = средний остаток × дней / продано; запаса хватит = остаток на конец × дней / продано.
+        Для товаров без продаж оба показателя - `null`.
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date }, description: По умолчанию - начало месяца }
+        - { name: to, in: query, schema: { type: string, format: date }, description: По умолчанию - сегодня }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  from: { type: string, format: date }
+                  to: { type: string, format: date }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        sku: { type: string }
+                        name: { type: string }
+                        opening: { type: number }
+                        sold: { type: number }
+                        closing: { type: number }
+                        average: { type: number }
+                        turnover_days: { type: number, nullable: true }
+                        cover_days: { type: number, nullable: true }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
 components:
   securitySchemes:
     ApiKey:
@@ -256,3 +412,34 @@ components:
         updated: { type: integer }
         skipped: { type: integer }
         errors: { type: array, items: { type: string } }
+
+    CellQuantity:
+      type: object
+      properties:
+        cell: { type: string }
+        quantity: { type: number }
+
+    Placement:
+      type: object
+      required: [sku, from, to, quantity]
+      properties:
+        sku: { type: string }
+        from: { type: string, description: Адрес ячейки-отправителя }
+        to: { type: string, description: Адрес ячейки-получателя }
+        quantity: { type: number }
+
+    PickList:
+      type: object
+      properties:
+        number: { type: string, description: Номер документа «Отбор товаров» }
+        order_id: { type: string }
+        items:
+          type: array
+          description: Строки в порядке обхода ячеек
+          items:
+            type: object
+            properties:
+              cell: { type: string }
+              sku: { type: string }
+              name: { type: string }
+              quantity: { type: number }

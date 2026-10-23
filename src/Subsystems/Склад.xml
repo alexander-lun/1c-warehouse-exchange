@@ -17,9 +17,15 @@
 			<Picture/>
 			<Content>
 				<xr:Item xsi:type="xr:MDObjectRef">Catalog.Номенклатура</xr:Item>
+				<xr:Item xsi:type="xr:MDObjectRef">Catalog.Ячейки</xr:Item>
 				<xr:Item xsi:type="xr:MDObjectRef">Document.ПоступлениеТоваров</xr:Item>
 				<xr:Item xsi:type="xr:MDObjectRef">Document.ЗаказМаркетплейса</xr:Item>
+				<xr:Item xsi:type="xr:MDObjectRef">Document.РазмещениеТоваров</xr:Item>
+				<xr:Item xsi:type="xr:MDObjectRef">Document.ОтборТоваров</xr:Item>
 				<xr:Item xsi:type="xr:MDObjectRef">AccumulationRegister.ОстаткиТоваров</xr:Item>
+				<xr:Item xsi:type="xr:MDObjectRef">AccumulationRegister.ТоварыВЯчейках</xr:Item>
+				<xr:Item xsi:type="xr:MDObjectRef">Report.ОстаткиПоЯчейкам</xr:Item>
+				<xr:Item xsi:type="xr:MDObjectRef">Report.ОборачиваемостьТоваров</xr:Item>
 				<xr:Item xsi:type="xr:MDObjectRef">InformationRegister.ЖурналОбмена</xr:Item>
 				<xr:Item xsi:type="xr:MDObjectRef">InformationRegister.ОчередьОтправкиСтатусов</xr:Item>
 				<xr:Item xsi:type="xr:MDObjectRef">Constant.АдресСервисаМаркетплейса</xr:Item>

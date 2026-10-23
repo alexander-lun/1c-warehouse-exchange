@@ -47,9 +47,11 @@
 				<v8:Value xsi:type="app:ApplicationUsePurpose">PlatformApplication</v8:Value>
 			</UsePurposes>
 			<ScriptVariant>Russian</ScriptVariant>
-			<DefaultRoles/>
+			<DefaultRoles>
+				<xr:Item xsi:type="xr:MDObjectRef">Role.ПолныеПрава</xr:Item>
+			</DefaultRoles>
 			<Vendor/>
-			<Version>1.0.0.1</Version>
+			<Version>1.1.0.1</Version>
 			<UpdateCatalogAddress/>
 			<IncludeHelpInContents>false</IncludeHelpInContents>
 			<UseManagedFormInOrdinaryApplication>false</UseManagedFormInOrdinaryApplication>
@@ -259,12 +261,15 @@
 			<InterfaceCompatibilityMode>Taxi</InterfaceCompatibilityMode>
 			<Version85InterfaceMigrationMode>DontUse</Version85InterfaceMigrationMode>
 			<DatabaseTablespacesUseMode>DontUse</DatabaseTablespacesUseMode>
-			<CompatibilityMode>Version8_5_1</CompatibilityMode>
+			<CompatibilityMode>Version8_3_24</CompatibilityMode>
 			<DefaultConstantsForm/>
 		</Properties>
 		<ChildObjects>
 			<Language>Русский</Language>
 			<Subsystem>Склад</Subsystem>
+			<Role>ПолныеПрава</Role>
+			<Role>Кладовщик</Role>
+			<Role>Менеджер</Role>
 			<CommonModule>ОбменСМаркетплейсом</CommonModule>
 			<CommonModule>РаботаСJSON</CommonModule>
 			<CommonModule>НастройкиОбменаВызовСервера</CommonModule>
@@ -275,13 +280,19 @@
 			<Constant>ТокенAPI</Constant>
 			<Constant>ДатаПоследнейЗагрузкиЗаказов</Constant>
 			<Catalog>Номенклатура</Catalog>
+			<Catalog>Ячейки</Catalog>
 			<Document>ПоступлениеТоваров</Document>
 			<Document>ЗаказМаркетплейса</Document>
+			<Document>РазмещениеТоваров</Document>
+			<Document>ОтборТоваров</Document>
 			<Enum>СтатусыЗаказов</Enum>
 			<Enum>НаправленияОбмена</Enum>
+			<Report>ОстаткиПоЯчейкам</Report>
+			<Report>ОборачиваемостьТоваров</Report>
 			<InformationRegister>ЖурналОбмена</InformationRegister>
 			<InformationRegister>ОчередьОтправкиСтатусов</InformationRegister>
 			<AccumulationRegister>ОстаткиТоваров</AccumulationRegister>
+			<AccumulationRegister>ТоварыВЯчейках</AccumulationRegister>
 		</ChildObjects>
 	</Configuration>
 </MetaDataObject>

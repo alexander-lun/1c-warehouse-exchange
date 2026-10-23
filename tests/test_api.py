@@ -14,7 +14,12 @@ def test_receipt_creates_item_and_stock(api, uid, receive, stock):
     receive(sku, 2.5)
 
     r = api.get(f"/stock/{sku}")
-    assert r.json() == {"sku": sku, "name": f"Тестовый товар {uid}", "quantity": 12.5}
+    assert r.json() == {
+        "sku": sku,
+        "name": f"Тестовый товар {uid}",
+        "quantity": 12.5,
+        "cells": [{"cell": "ПРИЕМКА", "quantity": 12.5}],
+    }
     assert any(i["sku"] == sku for i in api.get("/stock").json()["items"])
 
 
